@@ -132,7 +132,7 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1):
     # Initilise neuron lists for pruned inhibitory and excitatory neurons
     pruned = pymaid.CatmaidNeuronList([])
     # loop and prune
-    if version = 'old':
+    if version == 'old':
         for i in neurons:
             # prune the current neuron in this iteration to the AL
             i.reroot(i.soma, inplace=True)
@@ -141,7 +141,7 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1):
             current = pymaid.prune_by_strahler(current, to_prune=slice(-1, None), inplace=False)
             # add to initialised neuron list
             pruned += i
-    elif version = 'new':
+    elif version == 'new':
         for i in neurons:
             i.reroot(i.soma, inplace = True)
             # get the longest neurite
