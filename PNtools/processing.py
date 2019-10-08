@@ -125,7 +125,7 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1):
     """
     # If single neuron provided, change to neuron list
     if isinstance(neurons, pymaid.CatmaidNeuron):
-        n = pymaid.CatmaidNeuronList(neurons)
+        neurons = pymaid.CatmaidNeuronList(neurons)
 
     # resize volume
     volume.resize(vol_scale,inplace = True)
