@@ -97,7 +97,7 @@ def ends_matrix(neurons, volumes, as_mask = False):
     return end_mat.T
 
 
-def pruning(neurons, volume, version = 'new', vol_scale = 1):
+def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments = False):
     """ Prunes a neuron to a volume in a manner which attempts to limit the neuron to cable which is likely to synapse.
 
 
@@ -116,6 +116,11 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1):
     vol_scale:          int
                         integer, determining how to reseize the volume mesh being passed. 1 (default) doesn't change the size,
                         0.5 would halve the size, 1.5 would increase the volume by 50% etc
+
+    prevent_fragments:  Bool
+                        If True (default), returns a single complete subgraph, if False will potentially return a fragmented
+                        neuron. The fragmented neuron will likely be better pruned, but depending on further analysis a
+                        complete sub graph may be wanted.
 
     Returns
     -------
@@ -165,13 +170,13 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1):
                 neurite.prune_distal_to(cut,inplace = True)
                 # remove everything proximal to the root
                 subset = list(set(vol_prune.nodes.treenode_id) - set(neurite.nodes.treenode_id))
-                pymaid.subset_neuron(vol_prune,subset,clear_temp = True,inplace = True)
+                pymaid.subset_neuron(vol_prune,subset,clear_temp = True,inplace = True, prevent_fragments = prevent_fragments)
             # if the neurite does not end in the volume, remove primary neurite
             else:
                 # subtract the entire primary neurite
                 # subtract the neurite nodes from the cut neuron nodes:
                 subset = list(set(vol_prune.nodes.treenode_id) - set(neurite.nodes.treenode_id))
-                pymaid.subset_neuron(vol_prune,subset,clear_temp = True,inplace = True)
+                pymaid.subset_neuron(vol_prune,subset,clear_temp = True,inplace = True, prevent_fragments = prevent_fragments)
             pruned += vol_prune
 
     return (pruned)
