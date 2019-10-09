@@ -1,17 +1,17 @@
 # PNtools
 Collection of tools for the annalysis of connectomics data, focused on early olfcatory processing in _Drosophila_
 
-Currenty pre-release limited to pruning and cable length extraction tools.
+Currenty pre-release limited to pruning and cable length extraction tools, and upstream sample sheet generation.
 
 Requirments:
-  
+
   Python
   Pymaid
-  
+
 Quick Install:
 
   `pip3 install git+git://github.com/NikDrummond/PNtools@master`
-  
+
 Modules to come:
 
   - Statisitcal analysis of data using permutation based methods

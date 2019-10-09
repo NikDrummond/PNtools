@@ -15,7 +15,7 @@ with open('requirements.txt') as f:
 	requirements = [l for l in requirements if not l.startswith('#')]
 
 setup(name='PNtools',
-	version='0.0.1',
+	version=verstr,
 	description='Processing tools for Drosophila connectomics data',
 	url='https://github.com/NikDrummond/PN_tools',
 	author='Nik Drummond',

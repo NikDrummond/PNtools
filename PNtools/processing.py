@@ -3,17 +3,18 @@
 import pymaid
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 from . import utils
 
 @utils.has_remote_instance
-def get_gloms(Side = 'Both'):
+def get_gloms(Side = 'Right'):
     """ Collects all of the Glomeruli volumes from CATMAID.
 
     Parameters
     ----------
     Side :      str
-                Specifies to return glomeruli in the right, left, or both hemispheres of the FAFB volume. Takes string as input ('Right','Left','Both').
-                Set to 'Both' by default.
+                Specifies whether to return glomeruli in the right, left, or both hemispheres of the FAFB volume. Takes string as input ('Right','Left','Both').
+                Set to 'Right' by default.
 
     Retruns
     -------
@@ -81,7 +82,7 @@ def ends_matrix(neurons, volumes, as_mask = False):
     # Get matrix of end nodes within volumes
 
     end_mat = pd.DataFrame()
-    for i in neurons:
+    for i in tqdm(neurons):
         # get count of end nodes
         open_ends = set(i.nodes.treenode_id.values) - set(i.nodes.parent_id.values)
         dictionary = pymaid.in_volume(i.nodes.loc[i.nodes['treenode_id'].isin(open_ends)][['x','y','z']], volumes)
@@ -101,7 +102,6 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments =
     """ Prunes a neuron to a volume in a manner which attempts to limit the neuron to cable which is likely to synapse.
 
 
-
     Parameters
     ----------
     neurons :           CatmaidNeuron | List
@@ -118,7 +118,7 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments =
                         0.5 would halve the size, 1.5 would increase the volume by 50% etc
 
     prevent_fragments:  Bool
-                        If True (default), returns a single complete subgraph, if False will potentially return a fragmented
+                        If True, returns a single complete subgraph, if False (default) will potentially return a fragmented
                         neuron. The fragmented neuron will likely be better pruned, but depending on further analysis a
                         complete sub graph may be wanted.
 
@@ -138,7 +138,7 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments =
     pruned = pymaid.CatmaidNeuronList([])
     # loop and prune
     if version == 'old':
-        for i in neurons:
+        for i in tqdm(neurons):
             # prune the current neuron in this iteration to the AL
             i.reroot(i.soma, inplace=True)
             current = i.prune_by_volume(volume, prevent_fragments=True, inplace=False)
@@ -147,7 +147,7 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments =
             # add to initialised neuron list
             pruned += i
     elif version == 'new':
-        for i in neurons:
+        for i in tqdm(neurons):
             i.reroot(i.soma, inplace = True)
             # get the longest neurite
             neurite = pymaid.longest_neurite(i)
@@ -241,7 +241,7 @@ def cable_length_matrix(neurons, volumes, mask = None, Normalisation=None):
     if isinstance(volumes, pymaid.Volume):
         volumes = {volumes.name: volumes}
 
-    # cur neuron list to within volumes
+    # cut neuron list to within volumes
     res = pymaid.in_volume(neurons,volumes)
     # Create a data frame of cable lengths
     cable_mat = pd.DataFrame.from_dict({g: {i.skeleton_id: i.cable_length for i in res[g]} for g in res})
