@@ -1,6 +1,6 @@
 # Upstream sheet generation function
 import pymaid
-import pandas
+import pandas as pd
 import fafbseg
 
 def upstream_node_check(neurons,volume = None):
@@ -139,4 +139,4 @@ def upstream_sheet(neuron,volume = None,order='manual',auto_version = 'v3'):
             data.reset_index(drop = True,inplace = True)
         elif order == 'random':
             data = data.sample(frac=1).reset_index(drop = True)
-    return(data) 
+    return(data)
