@@ -92,6 +92,9 @@ def upstream_sheet(neuron,volume = None,order='manual',auto_version = 'v3'):
     conn = pymaid.get_connector_details(neuron.postsynapses)
     # get upstream nodes/neurons
     upstream = pymaid.find_treenodes(treenode_ids = list(conn.presynaptic_to_node.values))
+    upstream['connector_id'] = [conn.loc[((conn.presynaptic_to_node == upstream.loc[i].treenode_id)
+                                      & (conn.presynaptic_to == upstream.loc[i].skeleton_id))].connector_id.values[0] for i in upstream.index]
+    upstream = upstream[['skeleton_id','connector_id','parent_id','x','y','z']]
 
     if auto_version == 'v3':
         auto_version = 'v14-seg-li-190805.0'
@@ -114,7 +117,7 @@ def upstream_sheet(neuron,volume = None,order='manual',auto_version = 'v3'):
     if ans == 'y':
         data = missing_pre[['connector_id','x','y','z']]
     else:
-        data = upstream[['skeleton_id','treenode_id','x','y','z']]
+        data = upstream
 
     if ans == 'n':
         # Add list of x,y,z coords and URLs
