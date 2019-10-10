@@ -15,7 +15,10 @@ def get_gloms(Side = 'Right', instance = None):
     Side :      str
                 Specifies whether to return glomeruli in the right, left, or both hemispheres of the FAFB volume. Takes string as input ('Right','Left','Both').
                 Set to 'Right' by default. Can be set to 'FIB' to return the FIB glomeruli volumes from the local CATMAID instance. This requires that you are
-                a - on the local Zoology network, and b - you have to pass the function the remote instance for
+                a - on the local Zoology network, and b - you have to pass the function the remote instance for the local CATMAID instance.
+
+    instance:   CatmaidInstance
+                Which remote instance to use to pull glomeruli form. If not give (default) will fall back to global instance.
 
     Retruns
     -------
@@ -24,10 +27,13 @@ def get_gloms(Side = 'Right', instance = None):
 
     """
 
+    if instane is None:
+        instance = pymaid.utils._eval_remote_instance(instance)
+
     if Side == 'FIB':
         all_vols = pymaid.get_volume(remote_instance = instance)
         glom_names = [n for n in all_vols.name.values if n.startswith('FIB') and
-                     True not in 'neuropil']
+                     not n.endswith('neuropil')
     else:
         # Get a list of all volumes
         all_vols = pymaid.get_volume()
