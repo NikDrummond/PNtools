@@ -7,14 +7,15 @@ from tqdm import tqdm
 from . import utils
 
 @utils.has_remote_instance
-def get_gloms(Side = 'Right'):
+def get_gloms(Side = 'Right', instance = None):
     """ Collects all of the Glomeruli volumes from CATMAID.
 
     Parameters
     ----------
     Side :      str
                 Specifies whether to return glomeruli in the right, left, or both hemispheres of the FAFB volume. Takes string as input ('Right','Left','Both').
-                Set to 'Right' by default.
+                Set to 'Right' by default. Can be set to 'FIB' to return the FIB glomeruli volumes from the local CATMAID instance. This requires that you are
+                a - on the local Zoology network, and b - you have to pass the function the remote instance for
 
     Retruns
     -------
@@ -23,28 +24,39 @@ def get_gloms(Side = 'Right'):
 
     """
 
-    # Get a list of all volumes
-    all_vols = pymaid.get_volume()
-    # get a rough list of names we are interested in
-    glom_names = [n for n in all_vols.name.values if n.startswith('v14') and
-                 True not in [k in n for k in ['Lo','LC6', 'neuropil', 'LPC', 'LP_', 'right', '_ORNs']]]
-    # Remove the specific names we don't want to. This is because the 'Either a pymaid neuron, or neuron list._new' meshes are more accurate, and we don't want the VP1 sub-volumes
-    glom_names = [g for g in glom_names if g not in ['v14.VP1', 'v14.VP2', 'v14.VP3', 'v14.VP4', 'v14.VP5',
-                                                     'v14.VP1m', 'v14.VP1l', 'v14.VP1d', 'v14.VC5', 'v14.VP1_L',
-                                                     'v14.VP2_L', 'v14.VP3_L', 'v14.VP4_L', 'v14.VP5_L', 'v14.VP1m_L',
-                                                     'v14.VP1l_L', 'v14.VP1d_L', 'v14.VC5_L']]
+    if Side == 'FIB':
+        all_vols = pymaid.get_volume(remote_instance = instance)
+        glom_names = [n for n in all_vols.name.values if n.startswith('FIB') and
+                     True not in 'neuropil']
+    else:
+        # Get a list of all volumes
+        all_vols = pymaid.get_volume()
+        # get a rough list of names we are interested in
+        glom_names = [n for n in all_vols.name.values if n.startswith('v14') and
+                     True not in [k in n for k in ['Lo','LC6', 'neuropil', 'LPC', 'LP_', 'right', '_ORNs']]]
+        # Remove the specific names we don't want to. This is because the 'Either a pymaid neuron, or neuron list._new' meshes are more accurate, and we don't want the VP1 sub-volumes
+        glom_names = [g for g in glom_names if g not in ['v14.VP1', 'v14.VP2', 'v14.VP3', 'v14.VP4', 'v14.VP5',
+                                                         'v14.VP1m', 'v14.VP1l', 'v14.VP1d', 'v14.VC5', 'v14.VP1_L',
+                                                         'v14.VP2_L', 'v14.VP3_L', 'v14.VP4_L', 'v14.VP5_L', 'v14.VP1m_L',
+                                                         'v14.VP1l_L', 'v14.VP1d_L', 'v14.VC5_L']]
+        # Sort left, right, or both sides
+        if Side == 'Right':
+            # Remove left hand side glomeruli
+            glom_names = [g for g in glom_names if not g.endswith('_L')]
+        elif Side == 'Left':
+            # Remove right hand side Glomeruli
+            glom_names = [g for g in glom_names if g.endswith('_L')]
 
-    # Sort left, right, or both sides
-    if Side == 'Right':
-        # Remove left hand side glomeruli
-        glom_names = [g for g in glom_names if not g.endswith('_L')]
-    elif Side == 'Left':
-        # Remove right hand side Glomeruli
-        glom_names = [g for g in glom_names if g.endswith('_L')]
+    if instance is None:
+        gloms = pymaid.get_volume(glom_names)
+    else:
+        gloms = pymaid.get_volume(glom_names,remote_instance = instance)
 
-    gloms = pymaid.get_volume(glom_names)
     # clean up glomeruli names
-    gloms = {k.replace('v14.','').replace('_new',''): v for k, v in gloms.items()}
+    if Side == 'FIB':
+        gloms = {k.replace('FIB.',''): v for k, v in gloms.items()}
+    else:
+        gloms = {k.replace('v14.','').replace('_new',''): v for k, v in gloms.items()}
 
     return (gloms)
 
