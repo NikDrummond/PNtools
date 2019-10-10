@@ -33,7 +33,7 @@ def get_gloms(Side = 'Right', instance = None):
     if Side == 'FIB':
         all_vols = pymaid.get_volume(remote_instance = instance)
         glom_names = [n for n in all_vols.name.values if n.startswith('FIB') and
-                     not n.endswith('neuropil')
+                     not n.endswith('neuropil')]
     else:
         # Get a list of all volumes
         all_vols = pymaid.get_volume()
