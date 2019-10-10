@@ -27,7 +27,7 @@ def get_gloms(Side = 'Right', instance = None):
 
     """
 
-    if instane is None:
+    if instance is None:
         instance = pymaid.utils._eval_remote_instance(instance)
 
     if Side == 'FIB':
