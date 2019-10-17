@@ -5,68 +5,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from . import utils
-
-@utils.has_remote_instance
-def get_gloms(Side = 'Right', instance = None):
-    """ Collects all of the Glomeruli volumes from CATMAID.
-
-    Parameters
-    ----------
-    Side :      str
-                Specifies whether to return glomeruli in the right, left, or both hemispheres of the FAFB volume. Takes string as input ('Right','Left','Both').
-                Set to 'Right' by default. Can be set to 'FIB' to return the FIB glomeruli volumes from the local CATMAID instance. This requires that you are
-                a - on the local Zoology network, and b - you have to pass the function the remote instance for the local CATMAID instance.
-
-    instance:   CatmaidInstance
-                Which remote instance to use to pull glomeruli form. If not give (default) will fall back to global instance.
-
-    Retruns
-    -------
-    gloms :     dict
-                A dictionary of glomeruli volumes to pymaid volumes for all glomeruli
-
-    """
-
-    if instance is None:
-        instance = pymaid.utils._eval_remote_instance(instance)
-
-    if Side == 'FIB':
-        all_vols = pymaid.get_volume(remote_instance = instance)
-        glom_names = [n for n in all_vols.name.values if n.startswith('FIB') and
-                     not n.endswith('neuropil')]
-    else:
-        # Get a list of all volumes
-        all_vols = pymaid.get_volume()
-        # get a rough list of names we are interested in
-        glom_names = [n for n in all_vols.name.values if n.startswith('v14') and
-                     True not in [k in n for k in ['Lo','LC6', 'neuropil', 'LPC', 'LP_', 'right', '_ORNs']]]
-        # Remove the specific names we don't want to. This is because the 'Either a pymaid neuron, or neuron list._new' meshes are more accurate, and we don't want the VP1 sub-volumes
-        glom_names = [g for g in glom_names if g not in ['v14.VP1', 'v14.VP2', 'v14.VP3', 'v14.VP4', 'v14.VP5',
-                                                         'v14.VP1m', 'v14.VP1l', 'v14.VP1d', 'v14.VC5', 'v14.VP1_L',
-                                                         'v14.VP2_L', 'v14.VP3_L', 'v14.VP4_L', 'v14.VP5_L', 'v14.VP1m_L',
-                                                         'v14.VP1l_L', 'v14.VP1d_L', 'v14.VC5_L']]
-        # Sort left, right, or both sides
-        if Side == 'Right':
-            # Remove left hand side glomeruli
-            glom_names = [g for g in glom_names if not g.endswith('_L')]
-        elif Side == 'Left':
-            # Remove right hand side Glomeruli
-            glom_names = [g for g in glom_names if g.endswith('_L')]
-
-    if instance is None:
-        gloms = pymaid.get_volume(glom_names)
-    else:
-        gloms = pymaid.get_volume(glom_names,remote_instance = instance)
-
-    # clean up glomeruli names
-    if Side == 'FIB':
-        gloms = {k.replace('FIB.',''): v for k, v in gloms.items()}
-    else:
-        gloms = {k.replace('v14.','').replace('_new',''): v for k, v in gloms.items()}
-
-    return (gloms)
-
-
+from . import misc
 
 def ends_matrix(neurons, volumes, as_mask = False):
     """ Return a count of end nodes the neuron(s) have within the given volume(s).
@@ -150,8 +89,9 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments =
     if isinstance(neurons, pymaid.CatmaidNeuron):
         neurons = pymaid.CatmaidNeuronList(neurons)
 
-    # resize volume
-    volume.resize(vol_scale,inplace = True)
+    # resize volume if needed
+    if vol_scale is not 1:
+        volume.resize(vol_scale,inplace = True)
     # Initilise neuron lists for pruned inhibitory and excitatory neurons
     pruned = pymaid.CatmaidNeuronList([])
     # loop and prune
@@ -198,29 +138,6 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments =
             pruned += vol_prune
 
     return (pruned)
-
-
-def vol_of_vol(volumes):
-    """ Get the volume of volumes in CATMAID in nanometers cubed.
-
-    Parameters
-    ----------
-    volumes:     Volume | dict
-                 Either a pymaid volume, or a dictoinary of pymaid volumes.
-
-    Returns
-    -------
-    DataFrame:   DataFrame
-                 A data frame with the volume in nanomters cubed of each volume passed.
-
-    """
-    if isinstance(volumes, pymaid.Volume):
-        volumes = {volumes.name: volumes}
-
-    volumes = pd.DataFrame(data = [volumes[a].to_trimesh().volume for a in volumes],
-                           index = volumes.keys(),
-                           columns = ['Volume'])
-    return (volumes)
 
 
 def cable_length_matrix(neurons, volumes, mask = None, Normalisation=None):
@@ -272,7 +189,7 @@ def cable_length_matrix(neurons, volumes, mask = None, Normalisation=None):
     if Normalisation == 'Neuron':
         cable_mat = (cable_mat.T / cable_mat.sum(axis=1)).T
     elif Normalisation == 'Volume':
-        volumes = vol_of_vol(volumes)
+        volumes = misc.vol_of_vol(volumes)
         cable_mat = pd.DataFrame(data = cable_mat.values / volumes.T.values,
                                  index = cable_mat.index,
                                  columns = cable_mat.columns)

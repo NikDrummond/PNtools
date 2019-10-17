@@ -2,6 +2,7 @@
 import pymaid
 import pandas as pd
 import fafbseg
+from . import misc
 
 def upstream_node_check(neurons,volume = None):
     """ Check if upstream connectors have a node attached to them. If not, creates a DataFrame with URLs to v14 at site of the connector.
@@ -126,7 +127,7 @@ def upstream_sheet(neuron,volume = None,order='manual',auto_version = 'v3'):
         data['Auto_URL'] = [data.Manual_URL[i].replace('v14', auto_version) for i in range(len(data.Manual_URL))]
         if order == 'auto':
             # add fragment id column
-            data['Fragment_id'] = fafbseg.get_seg_ids(coords)
+            data['Fragment_id'] = fafbseg.segmentation.get_seg_ids(coords)
             # order
             grouper = data.groupby('Fragment_id')
             N_dict = grouper.treenode_id.count().to_dict()
@@ -143,3 +144,77 @@ def upstream_sheet(neuron,volume = None,order='manual',auto_version = 'v3'):
         elif order == 'random':
             data = data.sample(frac=1).reset_index(drop = True)
     return(data)
+
+def connections_in_vol(source, volumes = None, direction = 'Both', count = False):
+    """ Returns the volume(s) a neuron(s) synapses are located in.
+
+    Parameters
+    ----------
+
+    source:     CatmaidNeuron | CatmaidNeuronList | DataFrame
+                The neuron(s) or set of connectors (with information) you wish to get volume IDs for.
+                If DataFrame give, data frame MUST have columns called ['connector_id','skeleton_id','x','y','z']
+                with the relevant information in.
+
+    volumes:    Volume
+                The volume(s) to count connectos in. If not given, falls back to a list of all volumes used to
+                make up the FAFB full neuropil volume. See `PNtools.FAFB_vols`.
+
+    direction:  str
+                'Both' (default) returns all connectors, 'Presynaptic' returns output sites, and 'Postsynaptic'
+                returns input sites. This is only applicable if a neuron/neuron list is provided as input.
+
+    count:      Bool
+                If False (default) DataFrame with each connector as a row is returned, with a column for skid, and
+                a column for the volume the connector is in.
+                If True a DataFrame is returned with a row for each volume, and each column as a neuron, where values
+                are a count of the number of connectors that neuron has within the volume.
+
+    Returns
+    -------
+
+    DataFrame:  DataFrame
+                Either a connectors by [Skids, Volume] data frame, or a Volume by neurons data frame with connector counts
+                (see count option above).
+
+    """
+
+    # if source is neuron/neuron list get connectors data frame
+    if (isinstance(source, pymaid.CatmaidNeuron)|(isinstance(source, pymaid.CatmaidNeuronList))):
+        if isinstance(source,pymaid.CatmaidNeuron):
+            source = pymaid.CatmaidNeuronList(source)
+        # if direction specified, subset accordingly
+        if direction == 'Both':
+            source = source.connectors
+        elif direction == 'Presynaptic':
+            source = source.presynapses
+        elif direction == 'Postsynaptic':
+            source = source.postsynapses
+
+    if volumes is None:
+        volumes = misc.FAFB_vols()
+    elif isinstance(volumes, pymaid.Volume):
+        volumes = {volumes.name : volumes}
+
+    skids = set(source.skeleton_id)
+    # for each unique skid in source:
+    data = pd.DataFrame()
+    if count:
+        for s in skids:
+            # subset source to that skid, then get dictionary
+            dictionary = pymaid.in_volume(source.loc[source.skeleton_id == s],volumes)
+            data = pd.concat([data,pd.DataFrame.from_dict({n:sum(dictionary[n]) for n in dictionary.keys()},
+                                          orient = 'index',
+                                          columns = [str(s)])],axis = 1)
+    else:
+        dictionary = pymaid.in_volume(source,volumes)
+        data = pd.DataFrame(data = source.skeleton_id.values,
+                               index = source.connector_id,
+                               columns = ['skeleton_id'])
+        data['Volume'] = ""
+        for k in dictionary.keys():
+            indicies = [i for i, x in enumerate(dictionary[k]) if x]
+            if len(indicies) > 0:
+                data.iloc[indicies,[1]] = k
+
+    return (data)
