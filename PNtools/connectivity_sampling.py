@@ -106,13 +106,15 @@ def upstream_sheet(neuron,volume = None,order='manual',auto_version = 'v3'):
 
     # Check for connectors with no upstream node
     missing_pre = upstream_node_check(neuron,volume)
-    if missing_pre is not None:
-        print('You have ' +  str(len(missing_pre)) + ' upstream connectors with no upstream node!')
-        print('Would you rather generate a sheet with URLs to the connectors with no ustream node?')
-        ans = input(prompt = '[y|n]')
-    else:
-        print('All incoming connectors have an upstream node, pat yourself on the back! Or not. What do I care? No one listens to me anyway')
-        ans = 'n'
+
+    while ans not in ['y','n']:
+        if missing_pre is not None:
+            print('You have ' +  str(len(missing_pre)) + ' upstream connectors with no upstream node!')
+            print('Would you rather generate a sheet with URLs to the connectors with no ustream node?')
+            ans = input(prompt = '[y|n]')
+        else:
+            print('All incoming connectors have an upstream node, pat yourself on the back! Or not. What do I care? No one listens to me anyway')
+            ans = 'n'
 
     # Generate bare bones output
     if ans == 'y':
@@ -145,16 +147,17 @@ def upstream_sheet(neuron,volume = None,order='manual',auto_version = 'v3'):
             data = data.sample(frac=1).reset_index(drop = True)
     return(data)
 
-def connections_in_vol(source, volumes = None, direction = 'Both', count = False):
+def connectors_in_vol(source, volumes = None, direction = 'Both', count = False):
     """ Returns the volume(s) a neuron(s) synapses are located in.
 
     Parameters
     ----------
 
-    source:     CatmaidNeuron | CatmaidNeuronList | DataFrame
+    source:     CatmaidNeuron | CatmaidNeuronList | DataFrame | list
                 The neuron(s) or set of connectors (with information) you wish to get volume IDs for.
                 If DataFrame give, data frame MUST have columns called ['connector_id','skeleton_id','x','y','z']
                 with the relevant information in.
+                A list of connector IDs can be passed, in which case skids will be determined as the presynaptic neuron.
 
     volumes:    Volume
                 The volume(s) to count connectos in. If not given, falls back to a list of all volumes used to
@@ -190,6 +193,19 @@ def connections_in_vol(source, volumes = None, direction = 'Both', count = False
             source = source.presynapses
         elif direction == 'Postsynaptic':
             source = source.postsynapses
+
+    if isinstance(source, list):
+
+        # get node locations, order by node_id
+        source = pymaid.get_node_location(source)
+        source = source.sort_values(by = 'node_id', axis = 0)
+        # get connector deets, order by connector id
+        conn = pymaid.get_connector_details(source.node_id)
+        conn = conn.sort_values(by = 'connector_id', axis = 0)
+        # add skeleton id col. from connector deets to node locations etc...
+        source['skeleton_id'] = conn.presynaptic_to
+        source = source.rename(columns = {'node_id':'connector_id'})
+        source = source[['connector_id','skeleton_id','x','y','z']]
 
     if volumes is None:
         volumes = misc.FAFB_vols()
