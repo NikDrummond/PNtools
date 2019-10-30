@@ -18,7 +18,7 @@ def upstream_node_check(neurons,volume = None):
 
     Returns
     -------
-    DataFrame:  DataFrame
+    DataFrame
                 Data frame for each connector ID which does not have an upstream node, and URL to the connectors possiton in v14.
                 If all connectors have an upstream node, will return None.
     """
@@ -80,7 +80,7 @@ def upstream_sheet(neuron,volume = None,order='manual',auto_version = 'v3'):
     Returns
     -------
 
-    DataFrame:      DataFrame
+    DataFrame
                     Upstream sheet of your neuron, with URLs to upstream nodes, or a sheet of inputs to
                     your neuron that do not have an upstream node.
     """
@@ -176,7 +176,7 @@ def connectors_in_vol(source, volumes = None, direction = 'Both', count = False)
     Returns
     -------
 
-    DataFrame:  DataFrame
+    DataFrame
                 Either a connectors by [Skids, Volume] data frame, or a Volume by neurons data frame with connector counts
                 (see count option above).
 

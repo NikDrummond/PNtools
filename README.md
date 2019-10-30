@@ -1,18 +1,16 @@
 # PNtools
-Collection of tools for the annalysis of connectomics data, focused on early olfcatory processing in _Drosophila_
+Collection of tools for the annalysis of connectomics data, specifically the EM reconstruction of neurons.
+There is a focus on early olfcatory processing in _Drosophila_.
 
-Currenty pre-release limited to pruning and cable length extraction tools, and upstream sample sheet generation.
+This toolbox is built to work with CATMAID and pymaid, more detals for which can be found here:
 
-Requirments:
-
-  Python
-  Pymaid
+https://pymaid.readthedocs.io/en/latest/
 
 Quick Install:
 
   `pip3 install git+git://github.com/NikDrummond/PNtools@master`
 
-Modules to come:
+This toolbox is still in active development, and will include a broader range of modules in the future, including:
 
   - Statisitcal analysis of data using permutation based methods
   - Comparative neuron visualisation for matching between data sets

@@ -1,5 +1,6 @@
 import pymaid
 import pandas as pd
+import numpy as np
 from . import utils
 
 def vol_of_vol(volumes):
@@ -12,7 +13,7 @@ def vol_of_vol(volumes):
 
     Returns
     -------
-    DataFrame:   DataFrame
+    DataFrame
                  A data frame with the volume in nanomters cubed of each volume passed.
 
     """
@@ -39,7 +40,7 @@ def FAFB_vols(list = False):
     Returns
     -------
 
-    vols:   dict | list
+    dict | list
             By default, returns a dictionary of the "core" FAFB volumes used to create the full neuropil mesh.
             if list == True, just retruns a list of "core" neuropil names.
 
@@ -76,7 +77,7 @@ def get_gloms(Side = 'Right', instance = None):
 
     Retruns
     -------
-    gloms :     dict
+    dict
                 A dictionary of glomeruli volumes to pymaid volumes for all glomeruli
 
     """
@@ -96,9 +97,9 @@ def get_gloms(Side = 'Right', instance = None):
                      True not in [k in n for k in ['Lo','LC6', 'neuropil', 'LPC', 'LP_', 'right', '_ORNs']]]
         # Remove the specific names we don't want to. This is because the 'Either a pymaid neuron, or neuron list._new' meshes are more accurate, and we don't want the VP1 sub-volumes
         glom_names = [g for g in glom_names if g not in ['v14.VP1', 'v14.VP2', 'v14.VP3', 'v14.VP4', 'v14.VP5',
-                                                         'v14.VP1m', 'v14.VP1l', 'v14.VP1d', 'v14.VC5', 'v14.VP1_L',
-                                                         'v14.VP2_L', 'v14.VP3_L', 'v14.VP4_L', 'v14.VP5_L', 'v14.VP1m_L',
-                                                         'v14.VP1l_L', 'v14.VP1d_L', 'v14.VC5_L']]
+                                                         'v14.VP1_new', 'v14.VP1_L', 'v14.VP2_L', 'v14.VP3_L',
+                                                         'v14.VP4_L', 'v14.VP5_L', 'v14.VP1m_L', 'v14.VP1l_L',
+                                                         'v14.VP1d_L']]
         # Sort left, right, or both sides
         if Side == 'Right':
             # Remove left hand side glomeruli
@@ -119,3 +120,73 @@ def get_gloms(Side = 'Right', instance = None):
         gloms = {k.replace('v14.','').replace('_new',''): v for k, v in gloms.items()}
 
     return (gloms)
+
+def calc_ltk(x):
+    """ Calculate Lifetime Kurtosis from a list."""
+
+    # Make sure there are no NaNs:
+    x = x[ ~np.isnan(x)]
+    # ltk:
+    ltk = sum( ( ( x-x.mean() ) / x.std() ) **4) / len(x) - 3
+
+    return ltk
+
+
+def calc_lts(x):
+    """ Calculate Lifetime Sparseness from a list."""
+
+    # Make sure there are no NaNs:
+    x = x[ ~np.isnan(x)]
+
+    N = len(x)
+    # lts:
+    lts = 1 / (1 - (1 / N) ) * ( 1 - ( sum( x / N ) **2 / sum( x**2 / N ) ) )
+
+    return lts
+
+def path_to_root(node,neuron):
+    """  Get path between a node and the neurons root """
+    target = neuron.soma
+    if isinstance(neuron,pymaid.CatmaidNeuron):
+        neuron = neuron.graph
+    path = []
+    while node and node !=target:
+        path.append(node)
+        node = next(neuron.successors(node), None)
+
+    return path
+
+def first_branch(neurons):
+    """ Return a list of node IDs for the first branch point in the neuron(s)
+
+    Parameters
+    ----------
+
+    neurons     CatmaidNeuron | CatmaidNeuronList
+                A neuron, or neuron list. If neuron, returns single branch point.
+
+    Returns
+    -------
+
+    list
+                List of nodes IDs closest to neuron(s) root.
+
+
+    """
+    if isinstance(neurons, pymaid.CatmaidNeuron):
+        neurons = pymaid.CatmaidNeuronList(neurons)
+
+    nodes = []
+    for i in neurons:
+        # get the primary neurite
+        neurite = pymaid.longest_neurite(i)
+        # get all branch nodes in neuron
+        dist = set(i.nodes.loc[i.nodes.type == 'branch'].treenode_id.values)
+        # get the intersection, so branch points along the primary neurite
+        dist = dist.intersection(set(neurite.nodes.treenode_id))
+        # create a data frame with the distances to the root
+        dist = pd.DataFrame.from_dict({str(n) : pymaid.dist_between(i,n,i.root) for n in dist},
+                                       orient = 'index',
+                                       columns = ['Dist'])
+        nodes.append(i.nodes.loc[i.nodes.treenode_id.values == int(dist['Dist'].idxmin())]['parent_id'].values[0])
+    return nodes

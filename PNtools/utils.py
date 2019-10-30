@@ -17,5 +17,3 @@ def has_remote_instance(function):
         res = function(*args, **kwargs)
         return res
     return wrapper
-
-		

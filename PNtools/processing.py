@@ -23,7 +23,7 @@ def ends_matrix(neurons, volumes, as_mask = False):
 
     Returns
     -------
-    ends:     DataFrame
+    DataFrame
               Returns an n by volumes pandas data frame, with the number of leaf nodes within the volume.
               Note: this ignores ends tags, and returns the count of every node with no child.
 
@@ -81,7 +81,7 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments =
 
     Returns
     -------
-    pruned :            CatmaidNeuron | CatmaidNeuronList
+    CatmaidNeuron | CatmaidNeuronList
                         Pruned pymaid neuron / neuron list.
 
     """
@@ -124,7 +124,7 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments =
             # if the primary neurite ends in volume of interest
             if pymaid.in_volume(i.nodes.loc[i.nodes['treenode_id'] == last_node[0]][['x','y','z']],volume)[0]:
                 # get the parent of the branch node closest to the root
-                cut = neurite.nodes.loc[neurite.nodes.treenode_id.values == int(dist['Dist'].idxmin())]['parent_id']
+                    cut = neurite.nodes.loc[neurite.nodes.treenode_id.values == int(dist['Dist'].idxmin())]['parent_id']
                 neurite.prune_distal_to(cut,inplace = True)
                 # remove everything proximal to the root
                 subset = list(set(vol_prune.nodes.treenode_id) - set(neurite.nodes.treenode_id))
@@ -165,7 +165,7 @@ def cable_length_matrix(neurons, volumes, mask = None, Normalisation=None):
 
     Returns
     -------
-    DataFrame:        DataFrame
+    DataFrame
                       Returns a Neuron(s) by Volume(s) data frame with the length of neurons cable within each volume.
 
     """
