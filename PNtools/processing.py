@@ -4,6 +4,7 @@ import pymaid
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
+import itertools
 from . import utils
 from . import misc
 
@@ -54,36 +55,74 @@ def ends_matrix(neurons, volumes, as_mask = False):
 
     return end_mat.T
 
+def path_to_root(node,neuron):
+    """  Get path between a node and the neurons root """
+    target = neuron.soma
+    if isinstance(neuron,pymaid.CatmaidNeuron):
+        neuron = neuron.graph
+    path = []
+    while node and node !=target:
+        path.append(node)
+        node = next(neuron.successors(node), None)
+
+    return path
+
+def first_branch(neurons):
+    """ Return node ID(s) for the parent node of the first branch point in the neuron(s)
+
+    Parameters
+    ----------
+
+    neurons     CatmaidNeuron | CatmaidNeuronList
+                A neuron, or neuron list. If neuron, returns single branch point.
+
+    Returns
+    -------
+
+    list
+                List of nodes IDs closest to neuron(s) root.
+
+
+    """
+    if isinstance(neurons, pymaid.CatmaidNeuron):
+        neurons = pymaid.CatmaidNeuronList(neurons)
+
+    nodes = []
+    for i in neurons:
+        # get the primary neurite
+        neurite = pymaid.longest_neurite(i)
+        # get all branch nodes in neuron
+        dist = set(i.nodes.loc[i.nodes.type == 'branch'].treenode_id.values)
+        # get the intersection, so branch points along the primary neurite
+        dist = dist.intersection(set(neurite.nodes.treenode_id))
+        # create a data frame with the distances to the root
+        dist = pd.DataFrame.from_dict({str(n) : pymaid.dist_between(i,n,i.root) for n in dist},
+                                       orient = 'index',
+                                       columns = ['Dist'])
+        nodes.append(i.nodes.loc[i.nodes.treenode_id.values == int(dist['Dist'].idxmin())]['parent_id'].values[0])
+    return nodes
 
 def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments = False):
     """ Prunes a neuron to a volume in a manner which attempts to limit the neuron to cable which is likely to synapse.
-
-
     Parameters
     ----------
     neurons :           CatmaidNeuron | List
                         pymaid neuron or neuron list to be pruned
-
     volume :            Volume
                         CATMAID volume to prune the neuron to.
-
     version :           str
                         Defult to 'new', but can be 'old' if wished. See notes.
-
     vol_scale:          int
                         integer, determining how to reseize the volume mesh being passed. 1 (default) doesn't change the size,
                         0.5 would halve the size, 1.5 would increase the volume by 50% etc
-
     prevent_fragments:  Bool
                         If True, returns a single complete subgraph, if False (default) will potentially return a fragmented
                         neuron. The fragmented neuron will likely be better pruned, but depending on further analysis a
                         complete sub graph may be wanted.
-
     Returns
     -------
     CatmaidNeuron | CatmaidNeuronList
                         Pruned pymaid neuron / neuron list.
-
     """
     # If single neuron provided, change to neuron list
     if isinstance(neurons, pymaid.CatmaidNeuron):
@@ -124,7 +163,7 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments =
             # if the primary neurite ends in volume of interest
             if pymaid.in_volume(i.nodes.loc[i.nodes['treenode_id'] == last_node[0]][['x','y','z']],volume)[0]:
                 # get the parent of the branch node closest to the root
-                    cut = neurite.nodes.loc[neurite.nodes.treenode_id.values == int(dist['Dist'].idxmin())]['parent_id']
+                cut = neurite.nodes.loc[neurite.nodes.treenode_id.values == int(dist['Dist'].idxmin())]['parent_id']
                 neurite.prune_distal_to(cut,inplace = True)
                 # remove everything proximal to the root
                 subset = list(set(vol_prune.nodes.treenode_id) - set(neurite.nodes.treenode_id))
@@ -138,7 +177,6 @@ def pruning(neurons, volume, version = 'new', vol_scale = 1, prevent_fragments =
             pruned += vol_prune
 
     return (pruned)
-
 
 def cable_length_matrix(neurons, volumes, mask = None, Normalisation=None):
     """ Matrix of neuron cable length (nanometers) within volume(s)
