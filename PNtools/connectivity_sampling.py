@@ -213,6 +213,7 @@ def connectors_in_vol(source, volumes = None, direction = 'Both', count = False)
         volumes = {volumes.name : volumes}
 
     skids = set(source.skeleton_id)
+    skids = [str(s) for s in skids]
     # for each unique skid in source:
     data = pd.DataFrame()
     if count:
