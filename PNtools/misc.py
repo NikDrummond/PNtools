@@ -26,7 +26,7 @@ def vol_of_vol(volumes):
     return (volumes)
 
 @utils.has_remote_instance
-def FAFB_vols(list = False):
+def FAFB_vols(print_list = False):
     """ Returns core neuropils used to generate the FAFB mesh.
 
     Based on the `FAFBNP.surf$RegionList` function in the elmr R package.
@@ -55,7 +55,7 @@ def FAFB_vols(list = False):
             "SLP_L","SIP_L","SMP_L","AVLP_L","PVLP_L","WED_L","PLP_L","AOTU_L","GOR_L",
             "MB_CA_L","SPS_L","IPS_L","SCL_L","EPA_L","GA_L"]
 
-    if list:
+    if print_list:
         return (eugh)
     else:
         vols = pymaid.get_volume(eugh)
