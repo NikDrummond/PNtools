@@ -67,7 +67,7 @@ def path_to_root(node,neuron):
 
     return path
 
-def first_branch(neurons):
+def first_branch(neurons, volume = None):
     """ Return node ID(s) for the parent node of the first branch point in the neuron(s)
 
     Parameters
@@ -89,8 +89,12 @@ def first_branch(neurons):
 
     nodes = []
     for i in neurons:
+
         # get the primary neurite
         neurite = pymaid.longest_neurite(i)
+        # if volume provided, prune to that volume.
+        if volume is not None:
+            i.prune_by_volume(volume, inplace = True)
         # get all branch nodes in neuron
         dist = set(i.nodes.loc[i.nodes.type == 'branch'].treenode_id.values)
         # get the intersection, so branch points along the primary neurite

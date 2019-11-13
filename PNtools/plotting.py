@@ -1,5 +1,5 @@
 # Wrapper functions for useful plotting
-import matplot.pyplot as plt
+import matplotlib.pyplot as plt
 import pandas as pd
 from math import pi
 

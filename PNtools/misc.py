@@ -143,3 +143,14 @@ def calc_lts(x):
     lts = 1 / (1 - (1 / N) ) * ( 1 - ( sum( x / N ) **2 / sum( x**2 / N ) ) )
 
     return lts
+
+def point_in_vol(point, vols = None):
+    """ Find out which of the 'core' neuropils a point is in."""
+
+    # If not provided, get core volumes
+    if vols is None:
+        vols = PN.FAFB_vols()
+
+    test = pymaid.in_volume(point,vols)
+    vol = [i for i in test.keys() if test[i][0]]
+    return vol
