@@ -12,6 +12,6 @@ Quick Install:
 
 This toolbox is still in active development, and will include a broader range of modules in the future, including:
 
-  - Statisitcal analysis of data using permutation based methods
+  - Statistical analysis of data using permutation based methods
   - Comparative neuron visualisation for matching between data sets
   - Simple modeling of projection neurons based on a range of olfactory inputs
