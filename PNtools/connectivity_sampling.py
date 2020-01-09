@@ -107,6 +107,8 @@ def upstream_sheet(neuron,volume = None,order='manual',auto_version = 'v3'):
     # Check for connectors with no upstream node
     missing_pre = upstream_node_check(neuron,volume)
 
+    ans = 'z'
+
     while ans not in ['y','n']:
         if missing_pre is not None:
             print('You have ' +  str(len(missing_pre)) + ' upstream connectors with no upstream node!')
