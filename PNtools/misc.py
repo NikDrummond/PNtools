@@ -154,3 +154,47 @@ def point_in_vol(point, vols = None):
     test = pymaid.in_volume(point,vols)
     vol = [i for i in test.keys() if test[i][0]]
     return vol
+
+def seed_sheet(annotation, rm1 = None, rm2 = None):
+    """ Given an annotation for a seed region returns a sheet of nodes.
+
+    You need to first find a seed region in CATMAID, and seed it with nodes/neurons which all share the same annotation.
+
+    Given this annotation, this function will return a DataFrame with some simple neuron information (size, etc), as well as a URL to both
+    the v14 manual tracing instance, and the current most recent auto-segmented instance (as of writing, v14-seg-li-190805.0).
+
+    Current remote instance use buggy...
+
+    Parameters
+    ----------
+
+    annotation:     str
+                    The annotation used to identify the seed nodes for the sheet
+
+    rm1:            pymaid.remote_instance
+                    Optional. If passed, function will return a URL in the data frame to the neurons coordinates within this CATMAID instance
+
+    rm2:            pymaid.remote_instance
+                    Optional. If passed, function will return a URL in the data frame to the neurons coordinates within this CATMAID instance
+
+    Returns
+    -------
+
+    DataFrame:      DataFrame
+                    Data frame for use as a seed region sampling sheet. Can be saved as .csv or imported to Google Sheets.
+    """
+
+    N_all = pymaid.get_neurons("annotation:" + annotation)
+    df = N_all.summary()
+    df['node_loc'] = [n.nodes[['x','y','z']].values for n in N_all]
+
+    if rm1 is not None:
+        df['rm1'] = pymaid.url_to_coordinates(np.vstack(df.node_loc.values),
+                                                 stack_id = 5,
+                                                remote_instance = PS.manual())
+    if rm2 is not None:
+        df['rm2'] = pymaid.url_to_coordinates(np.vstack(df.node_loc.values),
+                                                 stack_id = 5,
+                                                remote_instance = PS.Auto_v3())
+
+    return df
